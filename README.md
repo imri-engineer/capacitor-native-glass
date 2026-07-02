@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="logo.png" alt="capacitor-native-glass" width="180" />
+  <img src="logo-v2.png" alt="capacitor-native-glass" width="180" />
 </p>
 
 <h1 align="center">Capacitor Native Glass</h1>
