@@ -20,6 +20,7 @@ public class NativeGlassPlugin: CAPPlugin, CAPBridgedPlugin {
     public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "showToolbar", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "showNavbar", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "updateNavbar", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "showFab", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "showPanel", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "showControls", returnType: CAPPluginReturnPromise),
@@ -63,10 +64,29 @@ public class NativeGlassPlugin: CAPPlugin, CAPBridgedPlugin {
     @objc func showNavbar(_ call: CAPPluginCall) {
         let title = call.getString("title") ?? "MaBible"
         let menu = (call.getArray("menu") as? [[String: Any]])
+        let items = call.getArray("items").map { $0.map { GlassBarItem(from: $0) } }
+        let groups = Self.groups(from: call)
         DispatchQueue.main.async {
-            self.ensureHost()?.showNavbar(title: title, menu: menu)
+            self.ensureHost()?.showNavbar(title: title, menu: menu, items: items, groups: groups)
             call.resolve()
         }
+    }
+
+    @objc func updateNavbar(_ call: CAPPluginCall) {
+        let menu = (call.getArray("menu") as? [[String: Any]])
+        let items = call.getArray("items").map { $0.map { GlassBarItem(from: $0) } }
+        let groups = Self.groups(from: call)
+        DispatchQueue.main.async {
+            self.host?.updateNavbar(menu: menu, items: items, groups: groups)
+            call.resolve()
+        }
+    }
+
+    /// Parse `groups: GlassBarItem[][]` — an array of button groups, each a
+    /// separate glass capsule on iOS 26.
+    private static func groups(from call: CAPPluginCall) -> [[GlassBarItem]]? {
+        guard let raw = call.getArray("groups") as? [[Any]] else { return nil }
+        return raw.map { group in group.map { GlassBarItem(from: $0) } }
     }
 
     @objc func showFab(_ call: CAPPluginCall) {
@@ -224,6 +244,7 @@ final class GlassHostView: UIView {
     private var controls: UIStackView?
     private var morphing: UIVisualEffectView?
     private var miniPlayer: UIVisualEffectView?
+    private var navItem: UINavigationItem?
 
     override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
         let hit = super.hitTest(point, with: event)
@@ -286,24 +307,13 @@ final class GlassHostView: UIView {
     }
 
     // MARK: Top nav bar (auto-glass iOS 26)
-    func showNavbar(title: String, menu: [[String: Any]]?) {
+    func showNavbar(title: String, menu: [[String: Any]]?, items: [GlassBarItem]?, groups: [[GlassBarItem]]?) {
         navbar?.removeFromSuperview()
         let nb = UINavigationBar()
         nb.translatesAutoresizingMaskIntoConstraints = false
-        let navItem = UINavigationItem(title: title)
-        if let menuItems = menu {
-            let m = GlassMenuBuilder.menu(from: menuItems) { [weak self] id in
-                self?.onAction?("menu:\(id)")
-            }
-            let btn = UIBarButtonItem(
-                image: UIImage(systemName: "ellipsis.circle"), style: .plain, target: nil, action: nil)
-            btn.menu = m
-            navItem.rightBarButtonItem = btn
-        } else {
-            navItem.rightBarButtonItem = UIBarButtonItem(
-                barButtonSystemItem: .action, target: self, action: #selector(navTap))
-        }
-        nb.items = [navItem]
+        let item = UINavigationItem(title: title)
+        applyNavRight(item, menu: menu, items: items, groups: groups, animated: false)
+        nb.items = [item]
         addSubview(nb)
         NSLayoutConstraint.activate([
             nb.leadingAnchor.constraint(equalTo: leadingAnchor),
@@ -311,6 +321,61 @@ final class GlassHostView: UIView {
             nb.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor),
         ])
         navbar = nb
+        navItem = item
+    }
+
+    /// Mutate the EXISTING nav bar's right side in place (no recreation), so
+    /// iOS 26 morphs the Liquid Glass between the two states — including
+    /// SPLITTING one glass capsule into several (like Notes: `[•••]` becoming
+    /// `[✓] [edit ⋯]`) when you switch from `items` to `groups`.
+    func updateNavbar(menu: [[String: Any]]?, items: [GlassBarItem]?, groups: [[GlassBarItem]]?) {
+        guard let item = navItem else { return }
+        applyNavRight(item, menu: menu, items: items, groups: groups, animated: true)
+    }
+
+    /// Apply the trailing configuration. `groups` (each a separate glass capsule)
+    /// takes precedence; otherwise a single `items` list or a `menu` button.
+    private func applyNavRight(
+        _ item: UINavigationItem,
+        menu: [[String: Any]]?,
+        items: [GlassBarItem]?,
+        groups: [[GlassBarItem]]?,
+        animated: Bool
+    ) {
+        if let groups = groups, #available(iOS 16.0, *) {
+            let itemGroups = groups.map { group in
+                UIBarButtonItemGroup(
+                    barButtonItems: group.map { makeBarButton($0) },
+                    representativeItem: nil
+                )
+            }
+            // Assigning trailingItemGroups animates the split/merge on iOS 26.
+            if animated {
+                UIView.animate(withDuration: 0.35) { item.trailingItemGroups = itemGroups }
+            } else {
+                item.trailingItemGroups = itemGroups
+            }
+            return
+        }
+        let newItems = buildNavRightItems(menu: menu, items: items)
+        item.setRightBarButtonItems(newItems, animated: animated)
+    }
+
+    private func buildNavRightItems(menu: [[String: Any]]?, items: [GlassBarItem]?) -> [UIBarButtonItem] {
+        if let items = items {
+            // explicit list of trailing buttons (each may carry its own menu)
+            return items.map { makeBarButton($0) }
+        }
+        if let menuItems = menu {
+            let m = GlassMenuBuilder.menu(from: menuItems) { [weak self] id in
+                self?.onAction?("menu:\(id)")
+            }
+            let btn = UIBarButtonItem(
+                image: UIImage(systemName: "ellipsis.circle"), style: .plain, target: nil, action: nil)
+            btn.menu = m
+            return [btn]
+        }
+        return [UIBarButtonItem(barButtonSystemItem: .action, target: self, action: #selector(navTap))]
     }
     @objc private func navTap() { onAction?("navbar:action") }
 

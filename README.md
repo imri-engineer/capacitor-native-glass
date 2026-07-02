@@ -113,7 +113,8 @@ sub.remove()
 
 | Method | Renders |
 |---|---|
-| `showNavbar({ title, menu? })` | top `UINavigationBar` (auto-glass); optional native pull-down `menu` on the right button |
+| `showNavbar({ title, menu?, items?, groups? })` | top `UINavigationBar` (auto-glass); right side = pull-down `menu`, a list of `items`, or multiple `groups` (each its own glass capsule) |
+| `updateNavbar({ menu?, items?, groups? })` | change the nav bar's trailing side **in place** — iOS 26 morphs the glass, incl. splitting one capsule into several (Notes-style) |
 | `showToolbar({ items })` | bottom `UIToolbar` (auto-glass); items may carry a native pull-down `menu` |
 | `showFab({ systemIcon })` | floating `UIButton(.glass())` — `systemIcon` is an SF Symbol |
 | `showPanel({ text })` | interactive, tinted `UIGlassEffect` panel |

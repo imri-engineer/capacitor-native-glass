@@ -61,10 +61,30 @@ export interface NativeGlassPlugin {
    */
   showToolbar(options: { items: GlassBarItem[] }): Promise<void>
   /**
-   * Native top navigation bar (automatic glass). Optionally give the right
-   * bar button a native pull-down `menu` that opens on tap.
+   * Native top navigation bar (automatic glass). Give the right side either a
+   * single pull-down `menu` (ellipsis button) or an explicit list of `items`.
    */
-  showNavbar(options: { title: string; menu?: GlassMenuItem[] }): Promise<void>
+  showNavbar(options: {
+    title: string
+    menu?: GlassMenuItem[]
+    items?: GlassBarItem[]
+    /**
+     * Multiple trailing button groups, each rendered as its OWN glass capsule
+     * on iOS 26 (e.g. `[[done], [edit, more]]`). Takes precedence over `items`.
+     */
+    groups?: GlassBarItem[][]
+  }): Promise<void>
+  /**
+   * Change the nav bar's trailing side IN PLACE (no recreation) with an
+   * animated transition — on iOS 26 the Liquid Glass morphs between states,
+   * including SPLITTING one glass capsule into several (like Apple Notes:
+   * `[•••]` becoming `[✓] [edit ⋯]`) when you pass `groups`.
+   */
+  updateNavbar(options: {
+    menu?: GlassMenuItem[]
+    items?: GlassBarItem[]
+    groups?: GlassBarItem[][]
+  }): Promise<void>
   /** Floating action button (FAB) in Liquid Glass. `systemIcon` = SF Symbol name. */
   showFab(options: { systemIcon: string }): Promise<void>
   /** Floating interactive, tinted glass panel (UIGlassEffect). */

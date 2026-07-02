@@ -1,6 +1,6 @@
 {
   "name": "capacitor-native-glass",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Native iOS 26 Liquid Glass surfaces (nav bar, toolbar, FAB, panel, controls, morphing, mini-player) rendered as overlays for Capacitor apps.",
   "type": "module",
   "main": "dist/index.cjs",
