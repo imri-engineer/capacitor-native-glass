@@ -47,30 +47,35 @@ needs (bars, FAB, panel, mini-player, morphing).
 
 ## Demo
 
-> Videos captured on a real iPhone (iOS 26). Real Liquid Glass only renders on device.
+> Captured on a real iPhone (iOS 26). Real Liquid Glass only renders on device.
 
-<!--
-  GitHub does NOT render repo-committed .mp4 inline. To embed real video players:
-  drag each file from ./media/ into a GitHub issue or the release notes, copy the
-  resulting https://github.com/user-attachments/... URL, and paste it below in place
-  of the screenshot links. Until then, the screenshots act as previews.
--->
+### Morphing
 
-<table>
-  <tr>
-    <td align="center"><img src="screenshots/morphing.png" width="220" /><br /><b>Morphing</b><br /><a href="media/morphing.mp4">▶ video</a></td>
-    <td align="center"><img src="screenshots/mini-player.png" width="220" /><br /><b>Mini-player</b><br /><a href="media/mini-player.mp4">▶ video</a></td>
-    <td align="center"><img src="screenshots/tab-bar.png" width="220" /><br /><b>Tab bar</b><br /><a href="media/tab-bar.mp4">▶ video</a></td>
-  </tr>
-  <tr>
-    <td align="center"><img src="screenshots/native-controls.png" width="220" /><br /><b>Controls</b><br /><a href="media/native-controls.mp4">▶ video</a></td>
-    <td align="center"><img src="screenshots/tinted-panel.png" width="220" /><br /><b>Tinted panel</b><br /><a href="media/tinted-panel.mp4">▶ video</a></td>
-    <td align="center"><img src="screenshots/floating-button.png" width="220" /><br /><b>FAB</b><br /><a href="media/floating-button.mp4">▶ video</a></td>
-  </tr>
-  <tr>
-    <td align="center"><img src="screenshots/toolbar.png" width="220" /><br /><b>Toolbar</b><br /><a href="media/toolbar.mp4">▶ video</a></td>
-  </tr>
-</table>
+https://github.com/user-attachments/assets/d0359dde-7016-40f2-8efe-1b7e46726747
+
+### Mini-player
+
+https://github.com/user-attachments/assets/5234bfc2-c6fd-4fa7-a746-4868f5d41730
+
+### Tab bar
+
+https://github.com/user-attachments/assets/0fd3c064-be86-4015-94e2-5b21c1c1790e
+
+### Native controls
+
+https://github.com/user-attachments/assets/7ecd0b18-9fdb-4cec-97ac-e9eeefaa805b
+
+### Tinted panel
+
+https://github.com/user-attachments/assets/997271da-2b05-4a80-9ca4-3f7f731cfe62
+
+### Floating button
+
+https://github.com/user-attachments/assets/011a458d-8d1d-4c07-8731-8fcdf9cd02c2
+
+### Toolbar
+
+https://github.com/user-attachments/assets/cb0651b8-ab80-44ac-acd2-b015d455c5dd
 
 ## Installation
 
