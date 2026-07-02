@@ -25,6 +25,7 @@ public class NativeGlassPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "showControls", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "showMorphing", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "showMiniPlayer", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "hide", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "hideAll", returnType: CAPPluginReturnPromise),
     ]
 
@@ -96,6 +97,17 @@ public class NativeGlassPlugin: CAPPlugin, CAPBridgedPlugin {
         let title = call.getString("title") ?? "Sermon en cours"
         DispatchQueue.main.async {
             self.ensureHost()?.showMiniPlayer(title: title)
+            call.resolve()
+        }
+    }
+
+    @objc func hide(_ call: CAPPluginCall) {
+        guard let surface = call.getString("surface") else {
+            call.reject("Missing 'surface'")
+            return
+        }
+        DispatchQueue.main.async {
+            self.host?.hide(surface: surface)
             call.resolve()
         }
     }
@@ -412,5 +424,19 @@ final class GlassHostView: UIView {
         [toolbar, navbar, fab, panel, controls, morphing, miniPlayer].forEach { $0?.removeFromSuperview() }
         toolbar = nil; navbar = nil; fab = nil; panel = nil
         controls = nil; morphing = nil; miniPlayer = nil
+    }
+
+    /// Remove a single surface by id, leaving the others untouched.
+    func hide(surface: String) {
+        switch surface {
+        case "toolbar":    toolbar?.removeFromSuperview();    toolbar = nil
+        case "navbar":     navbar?.removeFromSuperview();     navbar = nil
+        case "fab":        fab?.removeFromSuperview();        fab = nil
+        case "panel":      panel?.removeFromSuperview();      panel = nil
+        case "controls":   controls?.removeFromSuperview();   controls = nil
+        case "morphing":   morphing?.removeFromSuperview();   morphing = nil
+        case "miniPlayer": miniPlayer?.removeFromSuperview(); miniPlayer = nil
+        default: break
+        }
     }
 }

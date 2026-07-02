@@ -6,6 +6,16 @@ export interface NativeGlassActionEvent {
   id: string
 }
 
+/** A single glass surface identifier. */
+export type GlassSurface =
+  | 'toolbar'
+  | 'navbar'
+  | 'fab'
+  | 'panel'
+  | 'controls'
+  | 'morphing'
+  | 'miniPlayer'
+
 export interface NativeGlassPlugin {
   /** Native bottom toolbar (automatic glass on iOS 26). */
   showToolbar(options: { items: string[] }): Promise<void>
@@ -21,6 +31,8 @@ export interface NativeGlassPlugin {
   showMorphing(): Promise<void>
   /** Floating glass mini-player ("now playing" bar). */
   showMiniPlayer(options: { title: string }): Promise<void>
+  /** Removes a single native surface, leaving the others untouched. */
+  hide(options: { surface: GlassSurface }): Promise<void>
   /** Removes every native surface. */
   hideAll(): Promise<void>
   /** Listen to native interactions (taps on buttons/controls). */

@@ -120,6 +120,7 @@ sub.remove()
 | `showControls()` | native `UISegmentedControl` + `UISlider` + `UISearchBar` |
 | `showMorphing()` | `UIGlassContainerEffect` — bubbles that merge & split |
 | `showMiniPlayer({ title })` | floating glass "now playing" bar |
+| `hide({ surface })` | removes a single surface (`'toolbar' \| 'navbar' \| 'fab' \| 'panel' \| 'controls' \| 'morphing' \| 'miniPlayer'`) |
 | `hideAll()` | removes every surface |
 | `addListener('action', cb)` | native interaction events (`{ id }`) |
 
