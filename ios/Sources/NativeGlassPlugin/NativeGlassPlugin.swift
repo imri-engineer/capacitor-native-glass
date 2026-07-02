@@ -25,6 +25,10 @@ public class NativeGlassPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "showControls", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "showMorphing", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "showMiniPlayer", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "attachMenu", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "updateMenuRect", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "detachMenu", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "detachAllMenus", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "hide", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "hideAll", returnType: CAPPluginReturnPromise),
     ]
@@ -101,6 +105,90 @@ public class NativeGlassPlugin: CAPPlugin, CAPBridgedPlugin {
             self.ensureHost()?.showMiniPlayer(title: title)
             call.resolve()
         }
+    }
+
+    // MARK: Context menus (UIContextMenuInteraction on a WebView overlay)
+
+    private var menuHost: ContextMenuHostView?
+
+    private func ensureMenuHost() -> ContextMenuHostView? {
+        if let menuHost = menuHost { return menuHost }
+        guard let webView = bridge?.webView else { return nil }
+        let h = ContextMenuHostView(frame: webView.bounds)
+        h.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        h.backgroundColor = .clear
+        h.onSelect = { [weak self] id in
+            self?.notifyListeners("action", data: ["id": "menu:\(id)"])
+        }
+        webView.addSubview(h)
+        menuHost = h
+        return h
+    }
+
+    @objc func attachMenu(_ call: CAPPluginCall) {
+        guard let id = call.getString("id"),
+              let rectDict = call.getObject("rect"),
+              let items = call.getArray("items") as? [[String: Any]] else {
+            call.reject("Missing 'id', 'rect' or 'items'")
+            return
+        }
+        let rect = Self.rect(from: rectDict)
+        let title = call.getString("title")
+        let image = Self.image(from: call.getString("previewImage"))
+        let radius = CGFloat(call.getDouble("previewCornerRadius") ?? 12)
+        let tapTrigger = (call.getString("trigger") ?? "longPress") == "tap"
+        DispatchQueue.main.async {
+            self.ensureMenuHost()?.attach(
+                id: id, rect: rect, items: items, title: title,
+                previewImage: image, cornerRadius: radius, tapTrigger: tapTrigger
+            )
+            call.resolve()
+        }
+    }
+
+    @objc func updateMenuRect(_ call: CAPPluginCall) {
+        guard let id = call.getString("id"), let rectDict = call.getObject("rect") else {
+            call.reject("Missing 'id' or 'rect'")
+            return
+        }
+        let rect = Self.rect(from: rectDict)
+        DispatchQueue.main.async {
+            self.menuHost?.updateRect(id: id, rect: rect)
+            call.resolve()
+        }
+    }
+
+    @objc func detachMenu(_ call: CAPPluginCall) {
+        guard let id = call.getString("id") else {
+            call.reject("Missing 'id'")
+            return
+        }
+        DispatchQueue.main.async {
+            self.menuHost?.detach(id: id)
+            call.resolve()
+        }
+    }
+
+    @objc func detachAllMenus(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            self.menuHost?.detachAll()
+            call.resolve()
+        }
+    }
+
+    private static func image(from base64: String?) -> UIImage? {
+        guard var str = base64, !str.isEmpty else { return nil }
+        if let comma = str.range(of: ",") { str = String(str[comma.upperBound...]) }
+        guard let data = Data(base64Encoded: str) else { return nil }
+        return UIImage(data: data)
+    }
+
+    private static func rect(from dict: [String: Any]) -> CGRect {
+        let x = (dict["x"] as? NSNumber)?.doubleValue ?? 0
+        let y = (dict["y"] as? NSNumber)?.doubleValue ?? 0
+        let w = (dict["width"] as? NSNumber)?.doubleValue ?? 0
+        let h = (dict["height"] as? NSNumber)?.doubleValue ?? 0
+        return CGRect(x: x, y: y, width: w, height: h)
     }
 
     @objc func hide(_ call: CAPPluginCall) {

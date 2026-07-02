@@ -120,6 +120,9 @@ sub.remove()
 | `showControls()` | native `UISegmentedControl` + `UISlider` + `UISearchBar` |
 | `showMorphing()` | `UIGlassContainerEffect` — bubbles that merge & split |
 | `showMiniPlayer({ title })` | floating glass "now playing" bar |
+| `attachMenu({ id, rect, items, trigger?, previewImage? })` | native context menu (`UIContextMenuInteraction`) on a WebView region — `longPress` (lifted preview) or `tap` (pull-down) |
+| `updateMenuRect({ id, rect })` | re-sync an attached menu's rect after scroll/resize |
+| `detachMenu({ id })` / `detachAllMenus()` | remove attached context menus |
 | `hide({ surface })` | removes a single surface (`'toolbar' \| 'navbar' \| 'fab' \| 'panel' \| 'controls' \| 'morphing' \| 'miniPlayer'`) |
 | `hideAll()` | removes every surface |
 | `addListener('action', cb)` | native interaction events (`{ id }`) |

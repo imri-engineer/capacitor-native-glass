@@ -75,6 +75,19 @@ export interface NativeGlassPlugin {
   showMorphing(): Promise<void>
   /** Floating glass mini-player ("now playing" bar). */
   showMiniPlayer(options: { title: string }): Promise<void>
+  /**
+   * Attach a native context menu (`UIContextMenuInteraction`) to a region of
+   * the WebView. `longPress` (default) lifts a preview above a blurred
+   * background; `tap` opens a pull-down immediately. Selection emits an
+   * `action` event `menu:<id>`. Stays until `detachMenu`/`detachAllMenus`.
+   */
+  attachMenu(options: ContextMenuAttachOptions): Promise<void>
+  /** Update the rect of an attached menu (after scroll/resize). */
+  updateMenuRect(options: { id: string; rect: ContextMenuRect }): Promise<void>
+  /** Remove a single attached menu. */
+  detachMenu(options: { id: string }): Promise<void>
+  /** Remove every attached menu. */
+  detachAllMenus(): Promise<void>
   /** Removes a single native surface, leaving the others untouched. */
   hide(options: { surface: GlassSurface }): Promise<void>
   /** Removes every native surface. */
@@ -84,4 +97,36 @@ export interface NativeGlassPlugin {
     eventName: 'action',
     listener: (event: NativeGlassActionEvent) => void,
   ): Promise<PluginListenerHandle>
+}
+
+/** A rectangle in CSS/screen points (as from `getBoundingClientRect()`). */
+export interface ContextMenuRect {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+/** How a context menu opens. */
+export type ContextMenuTrigger = 'longPress' | 'tap'
+
+export interface ContextMenuAttachOptions {
+  /** Stable id used to `detachMenu` later. */
+  id: string
+  /** The trigger region (in CSS points). */
+  rect: ContextMenuRect
+  /** Menu contents (same shape as bar-button menus). */
+  items: GlassMenuItem[]
+  /** Optional menu title header. */
+  title?: string
+  /** `longPress` (default, with lifted preview) or `tap` (pull-down). */
+  trigger?: ContextMenuTrigger
+  /**
+   * Optional base64 PNG (no `data:` prefix) of the element, used as the lifted
+   * preview on long-press (capture with html2canvas). Without it, iOS lifts a
+   * plain rounded rectangle of the rect.
+   */
+  previewImage?: string
+  /** Corner radius (points) for the lifted preview. Default 12. */
+  previewCornerRadius?: number
 }

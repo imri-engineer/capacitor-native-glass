@@ -26,8 +26,12 @@ struct GlassBarItem {
 /// Builds a `UIMenu` tree from the JSON item array shared by toolbar/navbar
 /// buttons. `onSelect` is called with the leaf item's `id`.
 enum GlassMenuBuilder {
-    static func menu(from items: [[String: Any]], onSelect: @escaping (String) -> Void) -> UIMenu {
-        UIMenu(title: "", children: items.map { element(from: $0, onSelect: onSelect) })
+    static func menu(
+        from items: [[String: Any]],
+        title: String = "",
+        onSelect: @escaping (String) -> Void
+    ) -> UIMenu {
+        UIMenu(title: title, children: items.map { element(from: $0, onSelect: onSelect) })
     }
 
     private static func element(from dict: [String: Any], onSelect: @escaping (String) -> Void) -> UIMenuElement {
