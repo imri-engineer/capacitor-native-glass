@@ -48,17 +48,19 @@ public class NativeGlassPlugin: CAPPlugin, CAPBridgedPlugin {
     }
 
     @objc func showToolbar(_ call: CAPPluginCall) {
-        let titles = (call.getArray("items") as? [String]) ?? ["Share", "Favorite", "Settings"]
+        let raw = call.getArray("items") ?? ["Share", "Favorite", "Settings"]
+        let items = raw.map { GlassBarItem(from: $0) }
         DispatchQueue.main.async {
-            self.ensureHost()?.showToolbar(items: titles)
+            self.ensureHost()?.showToolbar(items: items)
             call.resolve()
         }
     }
 
     @objc func showNavbar(_ call: CAPPluginCall) {
         let title = call.getString("title") ?? "MaBible"
+        let menu = (call.getArray("menu") as? [[String: Any]])
         DispatchQueue.main.async {
-            self.ensureHost()?.showNavbar(title: title)
+            self.ensureHost()?.showNavbar(title: title, menu: menu)
             call.resolve()
         }
     }
@@ -142,14 +144,13 @@ final class GlassHostView: UIView {
     }
 
     // MARK: Bottom toolbar (auto-glass iOS 26)
-    func showToolbar(items: [String]) {
+    func showToolbar(items: [GlassBarItem]) {
         toolbar?.removeFromSuperview()
         let tb = UIToolbar()
         tb.translatesAutoresizingMaskIntoConstraints = false
         var bar: [UIBarButtonItem] = []
-        for (i, t) in items.enumerated() {
-            bar.append(UIBarButtonItem(title: t, style: .plain, target: self, action: #selector(toolbarTap(_:))))
-            (bar.last)?.tag = i
+        for item in items {
+            bar.append(makeBarButton(item))
             bar.append(UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil))
         }
         if !bar.isEmpty { bar.removeLast() }
@@ -162,18 +163,58 @@ final class GlassHostView: UIView {
         ])
         toolbar = tb
     }
+
+    /// Build a bar button. If the item carries a `menu`, the button opens a
+    /// native pull-down on tap; otherwise it emits a `toolbar:<id>` action.
+    private func makeBarButton(_ item: GlassBarItem) -> UIBarButtonItem {
+        let image = item.systemIcon.flatMap { UIImage(systemName: $0) }
+        if let menuItems = item.menu {
+            let menu = GlassMenuBuilder.menu(from: menuItems) { [weak self] id in
+                self?.onAction?("menu:\(id)")
+            }
+            // Build then assign .menu (iOS 14+) to stay below the iOS 16
+            // `init(...:menu:)` convenience initializer.
+            let btn: UIBarButtonItem
+            if let image = image {
+                btn = UIBarButtonItem(image: image, style: .plain, target: nil, action: nil)
+            } else {
+                btn = UIBarButtonItem(title: item.title, style: .plain, target: nil, action: nil)
+            }
+            btn.menu = menu
+            return btn
+        }
+        let btn: UIBarButtonItem
+        if let image = image {
+            btn = UIBarButtonItem(image: image, style: .plain, target: self, action: #selector(toolbarTap(_:)))
+        } else {
+            btn = UIBarButtonItem(title: item.title, style: .plain, target: self, action: #selector(toolbarTap(_:)))
+        }
+        btn.accessibilityIdentifier = item.id ?? item.title
+        return btn
+    }
+
     @objc private func toolbarTap(_ item: UIBarButtonItem) {
-        onAction?("toolbar:\(item.title ?? "")")
+        onAction?("toolbar:\(item.accessibilityIdentifier ?? item.title ?? "")")
     }
 
     // MARK: Top nav bar (auto-glass iOS 26)
-    func showNavbar(title: String) {
+    func showNavbar(title: String, menu: [[String: Any]]?) {
         navbar?.removeFromSuperview()
         let nb = UINavigationBar()
         nb.translatesAutoresizingMaskIntoConstraints = false
         let navItem = UINavigationItem(title: title)
-        navItem.rightBarButtonItem = UIBarButtonItem(
-            barButtonSystemItem: .action, target: self, action: #selector(navTap))
+        if let menuItems = menu {
+            let m = GlassMenuBuilder.menu(from: menuItems) { [weak self] id in
+                self?.onAction?("menu:\(id)")
+            }
+            let btn = UIBarButtonItem(
+                image: UIImage(systemName: "ellipsis.circle"), style: .plain, target: nil, action: nil)
+            btn.menu = m
+            navItem.rightBarButtonItem = btn
+        } else {
+            navItem.rightBarButtonItem = UIBarButtonItem(
+                barButtonSystemItem: .action, target: self, action: #selector(navTap))
+        }
         nb.items = [navItem]
         addSubview(nb)
         NSLayoutConstraint.activate([

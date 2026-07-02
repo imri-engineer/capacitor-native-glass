@@ -113,8 +113,8 @@ sub.remove()
 
 | Method | Renders |
 |---|---|
-| `showNavbar({ title })` | top `UINavigationBar` (auto-glass) |
-| `showToolbar({ items })` | bottom `UIToolbar` (auto-glass) |
+| `showNavbar({ title, menu? })` | top `UINavigationBar` (auto-glass); optional native pull-down `menu` on the right button |
+| `showToolbar({ items })` | bottom `UIToolbar` (auto-glass); items may carry a native pull-down `menu` |
 | `showFab({ systemIcon })` | floating `UIButton(.glass())` — `systemIcon` is an SF Symbol |
 | `showPanel({ text })` | interactive, tinted `UIGlassEffect` panel |
 | `showControls()` | native `UISegmentedControl` + `UISlider` + `UISearchBar` |
